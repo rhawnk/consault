@@ -1,0 +1,9 @@
+{
+  "testing/app1/external_host": "consul-externallocalhost",
+  "testing/app1/external_port": "9876",
+  "testing/app1/host": "localhost",
+  "testing/app1/port": "1234",
+  "testing/app2/bucket": "test3-consul",
+  "Production/app1/queue": "test.queue.domain.com",
+  "Production/app2/ROOT_TOKEN": "12345689"
+}

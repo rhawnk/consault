@@ -1,0 +1,272 @@
+##
+## Toggles on/off for services
+##
+tags:
+  consul: true
+  vault: true
+
+##
+## Individial service values below
+##
+
+# Default values for consul.
+# This is a YAML-formatted file.
+# Declare name/value pairs to be passed into your templates.
+# name: value
+
+## Consul service ports
+consul:
+  HttpPort: 8500
+  RpcPort: 8400
+  SerflanPort: 8301
+  SerflanUdpPort: 8301
+  SerfwanPort: 8302
+  SerfwanUdpPort: 8302
+  ServerPort: 8300
+  ConsulDnsPort: 8600
+
+  ## Specify the domain with which consul should run with
+  ## This will be passed as a -domain parameter
+  Domain: consul
+
+  ## Used as selector
+  Component: "consul"
+  Replicas: 1
+  Image: "consul"
+  ImageTag: "1.0.0"
+  ImagePullPolicy: "Always"
+  Resources: {}
+   # requests:
+   #   cpu: "100m"
+   #   memory: "256Mi"
+   # limits:
+   #   cpu: "500m"
+   #   memory: "512Mi"
+  ## Persistent volume size
+  Storage: "1Gi"
+
+  ## Needed for 0.8.0 and later IF all consul containers are spun up
+  ## on the same machine. Without this they all generate the same
+  ## host id.
+  DisableHostNodeId: false
+
+  ## Datacenter name for consul. If not supplied, will use the consul
+  ## default 'dc1'
+  # DatacenterName: dc1
+
+  ## Encrypt Gossip Traffic
+  Gossip:
+    Encrypt: true
+    Create: true
+
+  ## predefined value for gossip key.
+  ## Will use a generated random alpha numeric if not provided
+  GossipKey: 1234567890
+
+  ## consul data Persistent Volume Storage Class
+  ## If defined, StorageClassName: <storageClass>
+  ## If set to "-", StorageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  ##
+  # StorageClass: "-"
+
+  ## Setting maxUnavailable will create a pod disruption budget that will prevent
+  ## voluntarty cluster administration from taking down too many consul pods. If
+  ## you set maxUnavailable, you should set it to ceil((n/2) - 1), where
+  ## n = Replicas. For example, if you have 5 or 6 Replicas, you'll want to set
+  ## maxUnavailable = 2. If you are using the default of 3 Replicas, you'll want
+  ## to set maxUnavailable to 1.
+  maxUnavailable: 1
+
+  ## nodeAffinity settings
+  # nodeAffinity:
+  #   requiredDuringSchedulingIgnoredDuringExecution:
+  #     nodeSelectorTerms:
+  #     - matchExpressions:
+  #       - key: cloud.google.com/gke-preemptible
+  #         operator: NotIn
+  #         values:
+  #         - true
+
+  ## Affinity settings
+  affinity: |
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 1
+        podAffinityTerm:
+          topologyKey: kubernetes.io/hostname
+          labelSelector:
+            matchExpressions:
+            - key: component
+              operator: In
+              values:
+              - "{{ .Release.Name }}-{{ .Values.Component }}"
+
+  ## Enable Consul Web UI
+  ##
+  ui:
+    enabled: true
+  ## Create dedicated UI service
+  ##
+  uiService:
+    enabled: true
+    type: "LoadBalancer"
+
+  ConsulConfig: []
+  #  - type: secret
+  #    name: consul-defaults
+  #  - type: configMap
+  #    name: consul-defaults
+
+  ## Create an Ingress for the Web UI
+  uiIngress:
+    enabled: false
+    annotations: {}
+    hosts: []
+    tls: {}
+
+  ## test container details
+  test:
+    image: lachlanevenson/k8s-kubectl
+    imageTag: v1.4.8-bash
+
+# vault
+vault:
+  # Default values for vault.
+  # This is a YAML-formatted file.
+  # Declare variables to be passed into your templates.
+  replicaCount: 1
+  image:
+    repository: vault
+    tag: 0.10.1
+    pullPolicy: IfNotPresent
+
+  consulAgent:
+    repository: consul
+    tag: 1.0.7
+    pullPolicy: IfNotPresent
+    # If you set join to a consul server endpoint, a consul agent will
+    # be started in the vault pod.  If unset, no agent container is
+    # deployed.
+    join: consul
+    #
+    # If your consul server uses encrypted gossip, specify the secret
+    # name here.  Format should match the stable/consul chart.
+    gossipKeySecretName: consul-gossip-key
+    #
+    # Optionally override the agent's http port
+    HttpPort: 8500
+
+  service:
+    name: vault
+    type: ClusterIP
+    uiType: LoadBalancer
+    externalPort: 8200
+    port: 8200
+    # clusterIP: None
+    annotations: {}
+    #   cloud.google.com/load-balancer-type: "Internal"
+  ingress:
+    enabled: false
+    # Used to create Ingress record (should used with service.type: ClusterIP).
+    # hosts:
+    #  - chart-example.local
+    # annotations:
+    #   kubernetes.io/ingress.class: nginx
+    #   kubernetes.io/tls-acme: "true"
+    # tls:
+    #   Secrets must be manually created in the namespace.
+    #   - secretName: chart-example-tls
+    #     hosts:
+    #       - chart-example.local
+  resources: {}
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+  affinity: |
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          topologyKey: kubernetes.io/hostname
+          labelSelector:
+            matchLabels:
+              app: {{ template "vault.fullname" . }}
+              release: {{ .Release.Name }}
+
+  ## Deployment annotations
+  annotations: {}
+
+  podAnnotations: {}
+  ##    Read more about kube2iam to provide access to s3 https://github.com/jtblin/kube2iam
+  #     iam.amazonaws.com/role: role-arn
+
+  ## Sample for unsealing vault on startup
+  ## if automation saves your unseal keys to a k8s secret on deploy
+  ## writing a script to do this would be trivial and solves the
+  ## issues of scaling up if deployed in HA.
+  # lifecycle: |
+  #   postStart:
+  #     exec:
+  #       command: ["./unseal -s my-unseal-keys"]
+
+  vault:
+    # Only used to enable dev mode. When in dev mode, the rest of this config
+    # section below is not used to configure Vault. See
+    # https://www.vaultproject.io/intro/getting-started/dev-server.html for more
+    # information.
+    dev: true
+    # Allows the mounting of various custom secrets th enable production vault
+    # configurations. The comments show an example usage for mounting a TLS
+    # secret. The two fields required are a secretName indicating the name of
+    # the Kubernetes secret (created outside of this chart), and the mountPath
+    # at which it should be mounted in the Vault container.
+    customSecrets: []
+      # - secretName: vault-tls
+      #   mountPath: /vault/tls
+    readiness:
+      readyIfSealed: false
+      readyIfStandby: true
+      readyIfUninitialized: true
+    config:
+      # A YAML representation of a final vault config.json file.
+      # See https://www.vaultproject.io/docs/configuration/ for more information.
+      listener:
+        tcp:
+          address: '[::]:8200'
+          cluster_address: '[::]:8201'
+          tls_disable: true
+          tls_prefer_server_cipher_suites: true
+          tls_cipher_suites: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,TLS_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA
+          # tls_cert_file: /vault/tls/server.crt
+          # tls_key_file: /vault/tls/server.key
+      # See https://www.vaultproject.io/docs/configuration/storage/ for storage backends
+      storage:
+        consul:
+         address: "consul-consul:8500"
+         path: "vault"
+        #
+        # etcd:
+        #   address: ""
+        #   path: "vault/"
+        #
+        # s3:
+        #   bucket: ""
+        #   region: ""
+        #   access_key: ""
+        #   secret_key: ""
+        #   endpoint: "" # When not using AWS S3
+        #
+        # gcs:
+        #   bucket: ""
+        #   # Use a custom secret to mount this file.
+        #   credentials_file: ""

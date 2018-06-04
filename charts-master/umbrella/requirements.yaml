@@ -1,0 +1,14 @@
+dependencies:
+  - name: consul
+    version: 3.0.0
+    repository: file://../consul
+    alias: consul
+    tags:
+      - consul
+
+  - name: vault
+    version: 0.8.0
+    repository: file://../vault
+    alias: vault
+    tags:
+      - vault

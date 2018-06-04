@@ -1,0 +1,4 @@
+{
+  "secret/secret1/app_password": "123456",
+  "secret/secret1/database_password": "password2"
+}

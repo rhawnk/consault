@@ -27,9 +27,8 @@ class Vault():
         if r.status_code == 200:
             #Get Vault ROOT_TOKEN
             print ("getting vault token")
-            pod_args = "kubectl get pods | grep "+RELEASE_NAME+"-vault | awk '/-vault/ {print $1;exit}'"
+            pod_args = "kubectl get pods | grep "+RELEASE_NAME+"-vault | grep Running | awk '/-vault/ {print $1;exit}'"
             VAULT_POD = subprocess.check_output(pod_args, shell=True).strip().decode('utf-8')
-            # somestr = VAULT_POD.stdout.readline()
             print(VAULT_POD)
             ROOT_TOKEN_ARGS = "kubectl logs "+VAULT_POD+" -c vault | awk '/Root Token/ { print $3 }'"
             ROOT_TOKEN = subprocess.check_output(ROOT_TOKEN_ARGS, shell=True).strip().decode('utf-8')

@@ -112,7 +112,9 @@ consul:
   ##
   uiService:
     enabled: true
-    type: "LoadBalancer"
+    #type: "LoadBalancer"
+    type: "NodePort"
+
 
   ConsulConfig: []
   #  - type: secret
@@ -162,7 +164,8 @@ vault:
   service:
     name: vault
     type: ClusterIP
-    uiType: LoadBalancer
+    #uiType: LoadBalancer
+    uiType: NodePort
     externalPort: 8200
     port: 8200
     # clusterIP: None

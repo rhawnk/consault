@@ -58,6 +58,36 @@ Feel free to just set it as an env variable for reference.
 ROOT_TOKEN=$(kubectl logs <VAULT_POD_NAME> -c vault | awk '/Root Token/ { print $3 }')
 ```
 
+I have found minikube can have issues with RBAC roles resulting in the following error when trying to get the logs.
+
+```bash
+Error from server (Forbidden): pods is forbidden: User "system:serviceaccount:default:default" cannot list pods in the namespace "default"
+```
+
+The easy Fix, is to create the following role binding
+to  grant the default service account view permissions. 
+
+Create a yaml (named like rbac.yaml) with following contents:
+
+```bash
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: default-view
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: default
+```
+and apply it by running
+```bash
+kubectl apply -f rbac.yaml
+```
 ## Attributions
 
 - [Consul helm chart](https://github.com/kubernetes/charts/tree/master/stable/consul)
